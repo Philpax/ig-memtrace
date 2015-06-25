@@ -712,7 +712,7 @@ static void MemTrace::HookCrt()
   // On Windows, dynamically hook the CRT allocation functions to route through memtrace.
 
   // Load minhook DLL
-  if (HMODULE minhook_module = LoadLibraryA("MinHook.x64.dll"))
+  if (HMODULE minhook_module = LoadLibraryA("MinHook.x86.dll"))
   {
     auto MH_Initialize_Func = (decltype(&MH_Initialize)) GetProcAddress(minhook_module, "MH_Initialize");
     auto MH_CreateHook_Func = (decltype(&MH_CreateHook)) GetProcAddress(minhook_module, "MH_CreateHook");
@@ -723,13 +723,15 @@ static void MemTrace::HookCrt()
       DebugBreak();
     }
 
-#if _MSC_VER != 1700
-#error This needs updating for the new CRT version. Talk to Andreas.
-#endif
-
 #if !defined(_DEBUG)
 
+#if _MSC_VER == 1700
     if (HMODULE crt_module = GetModuleHandleA("msvcr110.dll"))
+#elif _MSC_VER == 1800
+    if (HMODULE crt_module = GetModuleHandleA("msvcr120.dll"))
+#else
+#error Unsupported CRT.
+#endif
     {
 #define IG_WRAP_FN(symbol) { #symbol, (void*) Wrapped_##symbol, (void**) &Original_##symbol }
       static const struct
